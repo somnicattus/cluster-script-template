@@ -21,3 +21,8 @@ var sendSignal = debounce(() => {
 $.onUpdate((deltaTimeSecond) => {
   sendSignal(deltaTimeSecond);
 });
+$.onReceive((messageType, sender) => {
+  if (messageType === "messageBusInitialized" && sender instanceof ItemHandle) {
+    $.state.messageBus = sender;
+  }
+});
