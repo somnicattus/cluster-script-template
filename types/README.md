@@ -1,7 +1,7 @@
 
 ## Cluster Script の型定義の更新
 
-`types/cluster-script.d.ts` の内容は Cluster Kit 公式の型定義ファイルに以下の改良を加えたものになっています。
+`types/cluster-script.d.ts` の内容は Cluster Creator Kit 公式の型定義ファイルに以下の改良を加えたものになっています。
 
 - `stateProxy`, `groupStateProxy`, `UnityComponentPropertyProxy` の型をカスタム可能にする
 - `ClusterScript.getSignalCompat()` の返り値の型を引数の `parameterType` から推定する
@@ -11,7 +11,7 @@ Cluster Script がアップデートされた場合は最新の型定義に合�
 
 ### 最新の Cluster Script の型定義を取得
 
-最新の Cluster Kit 公式の型定義を `types/cluster-script.d.ts.txt` に反映します。
+最新の Cluster Creator Kit 公式の型定義を `types/cluster-script.d.ts.txt` に反映します。
 
 ```bash
 bun types/fetch-types.ts <lang>
