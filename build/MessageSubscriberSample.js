@@ -14,9 +14,12 @@ $.onReceive((messageType, _arg, sender) => {
     sender.send("subscribe", { channelId: $.state.channelId });
   }
   if (messageType === "buttonInteracted") {
-    if ($.state.isVisible)
+    if ($.state.isVisible) {
+      $.state.isVisible = false;
       $.setVisiblePlayers([]);
-    else
+    } else {
+      $.state.isVisible = true;
       $.clearVisiblePlayers();
+    }
   }
 });
