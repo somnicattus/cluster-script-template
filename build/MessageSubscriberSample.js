@@ -1,9 +1,6 @@
 // constants/messageType.ts
 var messageBusInitialized = "messageBusInitialized";
 var subscribe = "subscribe";
-var unsubscribe = "unsubscribe";
-var publish = "publish";
-var signal = "signal";
 var buttonInteracted = "buttonInteracted";
 
 // scripts/MessageSubscriberSample.ts

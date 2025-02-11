@@ -1,10 +1,7 @@
 // constants/messageType.ts
 var messageBusInitialized = "messageBusInitialized";
-var subscribe = "subscribe";
-var unsubscribe = "unsubscribe";
 var publish = "publish";
 var signal = "signal";
-var buttonInteracted = "buttonInteracted";
 
 // utils/debounce.ts
 var debounce = (fn, delay) => {
