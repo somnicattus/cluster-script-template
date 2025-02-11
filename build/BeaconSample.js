@@ -1,3 +1,11 @@
+// constants/messageType.ts
+var messageBusInitialized = "messageBusInitialized";
+var subscribe = "subscribe";
+var unsubscribe = "unsubscribe";
+var publish = "publish";
+var signal = "signal";
+var buttonInteracted = "buttonInteracted";
+
 // utils/debounce.ts
 var debounce = (fn, delay) => {
   let accumulatedTime = 0;
@@ -13,8 +21,8 @@ var debounce = (fn, delay) => {
 // scripts/BeaconSample.ts
 var delaySecond = 2;
 var sendSignal = debounce(() => {
-  $.state.messageBus?.send("publish", {
-    messageType: "signal",
+  $.state.messageBus?.send(publish, {
+    messageType: signal,
     channelId: $.state.channelId
   });
 }, delaySecond);
@@ -22,7 +30,7 @@ $.onUpdate((deltaTimeSecond) => {
   sendSignal(deltaTimeSecond);
 });
 $.onReceive((messageType, sender) => {
-  if (messageType === "messageBusInitialized" && sender instanceof ItemHandle) {
+  if (messageType === messageBusInitialized && sender instanceof ItemHandle) {
     $.state.messageBus = sender;
   }
 });

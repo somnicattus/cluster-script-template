@@ -1,3 +1,11 @@
+// constants/messageType.ts
+var messageBusInitialized = "messageBusInitialized";
+var subscribe = "subscribe";
+var unsubscribe = "unsubscribe";
+var publish = "publish";
+var signal = "signal";
+var buttonInteracted = "buttonInteracted";
+
 // scripts/MessageSubscriberSample.ts
 $.onStart(() => {
   $.state.isVisible = true;
@@ -10,10 +18,10 @@ $.onStart(() => {
   $.state.channelId = channelId;
 });
 $.onReceive((messageType, _arg, sender) => {
-  if (messageType === "messageBusInitialized") {
-    sender.send("subscribe", { channelId: $.state.channelId });
+  if (messageType === messageBusInitialized) {
+    sender.send(subscribe, { channelId: $.state.channelId });
   }
-  if (messageType === "buttonInteracted") {
+  if (messageType === buttonInteracted) {
     if ($.state.isVisible) {
       $.state.isVisible = false;
       $.setVisiblePlayers([]);

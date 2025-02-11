@@ -1,3 +1,10 @@
+import {
+  messageBusInitialized,
+  subscribe,
+  unsubscribe,
+  publish,
+} from '../constants/messageType';
+
 // Declare the StateProxy type for the Script. Do not forget to initialize the state in the onStart callback.
 declare module '../types/cluster-script.d.ts' {
   interface StateProxy {
@@ -11,12 +18,12 @@ const radius = 100;
 $.onStart(() => {
   const items = $.getItemsNear($.getPosition(), radius);
   items.forEach((item) => {
-    item.send('messageBusInitialized', null);
+    item.send(messageBusInitialized, null);
   });
 });
 
 $.onReceive((messageType, arg, sender) => {
-  if (messageType === 'subscribe') {
+  if (messageType === subscribe) {
     if (
       typeof arg !== 'object' ||
       arg === null ||
@@ -33,7 +40,7 @@ $.onReceive((messageType, arg, sender) => {
     ];
     return;
   }
-  if (messageType === 'unsubscribe') {
+  if (messageType === unsubscribe) {
     if (
       typeof arg !== 'object' ||
       arg === null ||
@@ -49,7 +56,7 @@ $.onReceive((messageType, arg, sender) => {
     );
     return;
   }
-  if (messageType === 'publish') {
+  if (messageType === publish) {
     if (
       typeof arg !== 'object' ||
       arg === null ||

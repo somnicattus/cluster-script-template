@@ -1,13 +1,21 @@
+// constants/messageType.ts
+var messageBusInitialized = "messageBusInitialized";
+var subscribe = "subscribe";
+var unsubscribe = "unsubscribe";
+var publish = "publish";
+var signal = "signal";
+var buttonInteracted = "buttonInteracted";
+
 // scripts/MessageBusSample.ts
 var radius = 100;
 $.onStart(() => {
   const items = $.getItemsNear($.getPosition(), radius);
   items.forEach((item) => {
-    item.send("messageBusInitialized", null);
+    item.send(messageBusInitialized, null);
   });
 });
 $.onReceive((messageType, arg, sender) => {
-  if (messageType === "subscribe") {
+  if (messageType === subscribe) {
     if (typeof arg !== "object" || arg === null || !("channelId" in arg) || typeof arg["channelId"] !== "number") {
       $.log("Invalid argument for subscribe message.");
       return;
@@ -19,7 +27,7 @@ $.onReceive((messageType, arg, sender) => {
     ];
     return;
   }
-  if (messageType === "unsubscribe") {
+  if (messageType === unsubscribe) {
     if (typeof arg !== "object" || arg === null || !("channelId" in arg) || typeof arg["channelId"] !== "number") {
       $.log("Invalid argument for unsubscribe message.");
       return;
@@ -28,7 +36,7 @@ $.onReceive((messageType, arg, sender) => {
     $.state.subscriptions[channelId] = $.state.subscriptions[channelId]?.filter((item) => item !== sender);
     return;
   }
-  if (messageType === "publish") {
+  if (messageType === publish) {
     if (typeof arg !== "object" || arg === null || !("messageType" in arg) || typeof arg["messageType"] !== "string" || !("channelId" in arg) || typeof arg["channelId"] !== "number") {
       $.log("Invalid argument for publish message.");
       return;

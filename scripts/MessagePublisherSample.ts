@@ -1,3 +1,9 @@
+import {
+  messageBusInitialized,
+  buttonInteracted,
+  publish,
+} from '../constants/messageType';
+
 // Declare the StateProxy type for the Script. Do not forget to initialize the state in the onStart callback.
 declare module '../types/cluster-script.d.ts' {
   interface StateProxy {
@@ -19,15 +25,15 @@ $.onStart(() => {
 });
 
 $.onReceive((messageType, _arg, sender) => {
-  if (messageType === 'messageBusInitialized' && sender instanceof ItemHandle) {
+  if (messageType === messageBusInitialized && sender instanceof ItemHandle) {
     $.state.messageBus = sender;
   }
 });
 
 $.onInteract((player) => {
   $.log(`interacted by player ${player.id}`);
-  $.state.messageBus?.send('publish', {
-    messageType: 'buttonInteracted',
+  $.state.messageBus?.send(publish, {
+    messageType: buttonInteracted,
     channelId: $.state.channelId,
     arg: { triggeredByPlayerId: player.id },
   });
