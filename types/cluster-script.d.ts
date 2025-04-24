@@ -1074,37 +1074,53 @@ interface ClusterScript {
    * レスポンスは{@link ClusterScript.onExternalCallEnd}で受け取ります。
    * この呼び出しを利用するためには、開発者自身が外部のサーバーを用意する必要があります。
    *
+   * 外部通信機能についてはドキュメントの[外部通信](https://docs.cluster.mu/creatorkit/world/manage-data/call-external/)の説明もあわせて参照してください。
+   * 
    * ### 頻度の制限:
-   * callExternalを呼び出すことができる頻度には制限があります。
-   * - このスクリプトを実行しているアイテムがクラフトアイテムであった場合、ひとつのアイテムあたり5回/分
-   * - このスクリプトを実行しているアイテムがワールドアイテムであった場合、ひとつのスペースあたり全てのワールドアイテムの合計で100回/分
    *
-   * 瞬間的にこの制限を超えることはできますが、平均回数はこの制限を下回るようにしてください。
+   * `callExternal`の呼び出し自体には頻度の制限はありませんが、外部サーバーが応答可能な頻度である必要があります。
+   * 高負荷で応答ができていないと思われる場合は、制限やお問い合わせさせていただく場合があります。
+   *
+   * ### 流量制御:
+   *
+   * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+   * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
+   *
+   * ### 流量制御による制限:
+   *
+   * `callExternal`が動作するためには、流量制御による遅延が30秒以下である必要があります。
    * 制限を超えている場合、{@link ClusterScriptError} (`rateLimitExceeded`)が発生し操作は失敗します。
    *
    * ### 容量の制限:
    * requestやmetaがサイズ制限を超えている場合、{@link ClusterScriptError} (`requestSizeLimitExceeded`) が発生します。
    *
+   * ### 設定
+   * `callExternal`を利用するには、EndpointとVerify Tokenが必要です。
+   * EndpointとVerify TokenはCreator Kitの `外部通信(callExternal)接続先URL` から登録および作成できます。
+   * 
+   * Endpointで外部サーバーがリクエストを受け取るエンドポイントURLを指定します。
+   * Endpointはアカウントごとに最大100個登録できます。
+   * 
+   * Verify Tokenは開発者自身がEndpointを管理していることを確認するために利用されます。
+   * Verify Tokenはアカウントごとに最大2個登録できます。
+   * 
    * ### 利用方法
-   * 設定: リクエストを受け取るendpoint (`外部通信(callExternal)接続先URL`) をCreator Kitから登録してください。
-   * endpointはアカウントに紐付き、アカウントに対してひとつだけ設定できます。
-   * リクエストはそのアイテム・ワールドをアップロードしたアカウントのendpointに送信されます。
+   * リクエストはそのアイテム・ワールドをアップロードしたアカウントに紐付く、endpointIdで指定されたエンドポイントに送信されます。
    *
-   * Cluster ScriptからcallExternalが呼ばれるたびに、endpointに対してclusterのサーバーからHTTP POST呼び出しが行われます。
-   * POSTに対するresponseに含まれるデータがonExternalCallEndに渡されます。
-   * endpointが5秒のtimeoutを超えても応答しない場合、またエラーを返した場合、失敗と判定されます。
-   * clusterからendpointに対するretryは行いません。
+   * Cluster Scriptから`callExternal`が呼ばれるたびに、エンドポイントに対してclusterのサーバーからHTTP POST呼び出しが行われます。
+   * POSTに対するresponseに含まれるデータが`onExternalCallEnd`に渡されます。
+   * エンドポイントが5秒のタイムアウトを超えても応答しない場合、またエラーを返した場合、失敗と判定されます。
+   * clusterからエンドポイントに対するリトライは行いません。
    *
-   * ### endpointの仕様
+   * ### エンドポイントの仕様
    * 以下の形式でHTTP POSTに応答する必要があります。
    * 対応しているのはHTTP/1.1およびHTTP/2のみで、HTTP/3による呼び出しには対応していません。
    * HTTPもしくはHTTPSに対応していますが、公開時にはセキュリティ向上のためHTTPSの利用を推奨します。
    *
-   *
    * **リクエスト**
    * ```json
    * {
-   *   "request": "...1kB以下の文字列..."
+   *   "request": "...100kB以下の文字列..."
    * }
    * ```
    *
@@ -1112,14 +1128,18 @@ interface ClusterScript {
    * ```json
    * {
    *   "verify": "...verify_token (Creator Kitで取得できます)...",
-   *   "response": "...1kB以下の文字列..."
+   *   "response": "...100kB以下の文字列..."
    * }
    * ```
    *
-   * verifyフィールドは、開発者自身がendpointを管理していることを確認するために利用されます。
-   * responseフィールドが1kBを超えていた場合、不正な応答とみなし、callExternalは失敗として扱われます。
+   * verifyフィールドには、アカウントに紐づくいずれかのVerify Tokenを指定してください。
    *
-   * 不正な応答などでendpointの所有が確認できない場合はcallExternal APIの利用を制限させていただきます。
+   * 以下の場合、不正な応答とみなし、`callExternal`は失敗として扱われます。
+   * 
+   * - responseフィールドが100kBを超えていた場合
+   * - verifyフィールドにいずれかの有効なVerify Tokenが指定されていなかった場合
+   *
+   * 不正な応答などでEndpointの所有が確認できない場合はcallExternal APIの利用を制限させていただきます。
    * 高負荷で応答ができていないと思われる場合なども、同様に制限やお問い合わせさせていただく場合があります。
    *
    * ### プライバシー
@@ -1127,9 +1147,22 @@ interface ClusterScript {
    * そのような利用が疑われる場合、callExternal APIの利用の制限や利用目的のお問い合わせをさせていただく場合があります。
    * また、当社が不適切と判断した場合、予告なく利用を制限させていただく場合もあります。
    *
+   * @param endpointId 送信先となる外部のサーバーを指定するEndpointのIDです。
+   * @param request 100kB以下の文字列です。外部のサーバーに送信されます。
+   * @param meta 100 byte以下の文字列です。複数の`callExternal`呼び出しを識別するために利用できます。空文字や、同じ文字列を複数回指定しても問題ありません。
+   */
+  callExternal(endpointId: ExternalEndpointId, request: string, meta: string): void;
+
+  /**
+   * 送信先のエンドポイントを指定せずに空間の外部にリクエストを送信します。 \
+   * リクエストはCreator Kitの旧バージョンの`外部通信(callExternal)接続先URL`で登録されたエンドポイントに送信されます。
    *
-   * @param request 1kB以下の文字列です。外部のサーバーに送信されます。
-   * @param meta 100 byte以下の文字列です。複数のcallExternal呼び出しを識別するために利用できます。空文字や、同じ文字列を複数回指定しても問題ありません。
+   * @deprecated
+   * このAPIは Creator Kit v2.32.0 以降では非推奨です。 \
+   * 代わりに、 {@link ClusterScript.callExternal:0 | ClusterScript.callExternal(ExternalEndpointId, string, string)} を利用してください。
+   *
+   * @param request 100kB以下の文字列です。外部のサーバーに送信されます。
+   * @param meta 100 byte以下の文字列です。複数の`callExternal`呼び出しを識別するために利用できます。空文字や、同じ文字列を複数回指定しても問題ありません。
    */
   callExternal(request: string, meta: string): void;
 
@@ -1146,7 +1179,7 @@ interface ClusterScript {
    *
    * #### 流量制御
    *
-   * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+   * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
    * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
    *
    * #### クラフトアイテムの PlayerScript
@@ -1342,6 +1375,20 @@ interface ClusterScript {
    * イベント及びテスト用スペース以外ではこのAPIによるコールバック登録は成功しますが、コールバックは呼ばれません。
    */
   onCommentReceived(callback: (comments: Comment[]) => void): void;
+  
+  /**
+   * {@link PlayerHandle.requestGrantProduct | PlayerHandle.requestGrantProduct}で実施した商品付与の結果を取得した際に呼ばれるコールバックを登録します。
+   *
+   * スクリプトのトップレベルでの呼び出しのみサポートされます。
+   * トップレベルで複数回呼ばれた場合、最後の登録のみが有効です。
+   *
+   * #### ルーム種別による挙動の違い:
+   *
+   * テスト用のスペースで呼び出された際、callback引数 {@link ProductGrantResult.status | result.status} は付与対象のプレイヤーが商品の販売者であることやプレイヤーの商品の所持状況に関わらず `"Granted"` を示しますが、実際には商品付与は実施されません。
+   *
+   * @param callback result = 商品付与の結果を示します。
+   */
+  onRequestGrantProductResult(callback: (result: ProductGrantResult) => void): void;
 }
 
 /** @internal @item */
@@ -2119,6 +2166,21 @@ declare global {
   }
 
   /**
+ * 外部通信機能の送信先エンドポイントを指定するIDを表します。
+ * {@link ClusterScript.callExternal:0 | ClusterScript.callExternal(ExternalEndpointId, string, string)} に渡すことで、リクエスト送信先となる外部サーバーを指定できます。
+ *
+ * @item
+ */
+ class ExternalEndpointId {
+  /**
+   * 外部通信機能の送信先エンドポイントのIDを表すインスタンスを生成します。
+   *
+   * @param id Creator Kitの外部通信(callExternal)接続先URLウィンドウに表示されるEndpoint ID
+   */
+  constructor(id: string);
+}
+
+  /**
    * @item
    * イベントにおけるプレイヤーのロールの種類を表します。
    */
@@ -2224,7 +2286,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+   * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * #### 流量制御による制限:
@@ -2261,7 +2323,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param force 撃力 (グローバル座標)
@@ -2279,7 +2341,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param torque 角力積 (グローバル座標)
@@ -2298,7 +2360,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param impulse 撃力 (グローバル座標)
@@ -2378,7 +2440,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param position 足元の中心位置の移動先 (グローバル座標)
@@ -2397,7 +2459,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param rotation プレイヤーの向き (グローバル座標)
@@ -2476,7 +2538,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      */
     setHumanoidPose(pose: HumanoidPose, option: SetHumanoidPoseOption): void;
@@ -2502,7 +2564,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      */
     respawn(): void;
@@ -2520,7 +2582,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param velocity 加えられる速度 (グローバル座標)
@@ -2541,7 +2603,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param moveSpeedRate 移動速度の倍率
@@ -2562,7 +2624,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param jumpSpeedRate ジャンプ速度の倍率
@@ -2583,7 +2645,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param gravity 重力加速度
@@ -2602,7 +2664,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      */
     resetPlayerEffects(): void;
@@ -2649,7 +2711,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @param meta 100 byte以下の文字列です。複数のrequestTextInput呼び出しを識別するために利用できます。空文字や、同じ文字列を複数回指定しても問題ありません。
@@ -2675,7 +2737,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @example
@@ -2746,7 +2808,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * #### 流量制御による制限:
@@ -2792,7 +2854,7 @@ declare global {
      *
      * #### 流量制御:
      *
-     * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+     * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
      * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
      *
      * @example
@@ -2877,6 +2939,71 @@ declare global {
      * @returns プレイヤーが現在使用しているアクセサリーの商品IDの配列
      */
     getAccessoryProductIds(): string[];
+
+    
+  /**
+   * プレイヤーに商品付与を行います。
+   *
+   * 商品付与を行うと、対象のプレイヤーは商品を購入した時と同じく商品を所持した状態になり、商品を使用することができます。\
+   * 実行結果は {@link ClusterScript.onRequestGrantProductResult | ClusterScript.onRequestGrantProductResult} に設定したコールバックで受け取ることができます。
+   *
+   * #### 付与可能な商品:
+   *
+   * 付与可能な商品は以下の通りです。
+   * - クラフトアイテム商品
+   * - アクセサリー商品
+   * - アバター商品
+   *
+   * 商品は販売可能なものとしてストアに公開されている必要があります。一度ストアに公開した商品は、後から公開設定を変更しても付与できます。
+   *
+   * #### 商品付与の実行制限:
+   *
+   * ワールドアイテムからこのメソッドを呼び出す場合、ワールドアイテムのクリエイターと商品の販売者が一致している場合に付与できます。\
+   * クラフトアイテムからこのメソッドを呼び出す場合、クラフトアイテムのクリエイターと商品の販売者が一致している場合に付与できます。\
+   * 例えば、他人が販売している商品を付与する事はできませんが、商品の販売者が自身の商品を付与するクラフトアイテムを販売した場合、他のプレイヤーはその商品を購入・使用して商品を付与する事ができます。
+   *
+   * 上記制限はアップデート等により変更となる可能性があります。
+   *
+   * #### ルーム種別による挙動の違い:
+   *
+   * テスト用のスペースで呼び出された際、コールバックの引数 {@link ProductGrantResult.status | result.status} は付与対象のプレイヤーが商品の販売者であることやプレイヤーの商品の所持状況に関わらず `"Granted"` を示しますが、実際には商品付与は実施されません。
+   *
+   * #### 流量制御:
+   *
+   * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+   * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
+   *
+   * @example
+   * ```ts
+   * const productId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+   *
+   * // PlayerHandle.requestGrantProductの結果を受け取れるようにする
+   * $.onRequestGrantProductResult((result) => {
+   *     $.log(`status: ${result.status}, productId: ${result.productId}, productName: ${result.productName}, playerId: ${result.player.id}, meta: ${result.meta}, errorReason: ${result.errorReason}`);
+   *     const status = result.status;
+   *     switch (status) {
+   *         case "Granted":
+   *         case "AlreadyOwned":
+   *             if (result.player.exists()) {
+   *                 $.log(`${result.player.userDisplayName} granted product: ${result.productName}`);
+   *             }
+   *             break;
+   *         default:
+   *             $.log(`status: ${status}, errorReason: ${result.errorReason}`);
+   *             break;
+   *     }
+   * });
+   *
+   * // インタラクトしたプレイヤーに商品を付与する
+   * $.onInteract((player) => {
+   *     player.requestGrantProduct(productId, `${productId}_${player.id}`);
+   * });
+   * ```
+   *
+   * @param productId 付与する商品のIDです。[商品管理画面](https://cluster.mu/account/products/avatars)の各商品詳細にある「ワールド・イベントでの販売許可」の項目からIDをコピーすることが可能です。
+   * @param meta 100 byte以下の文字列です。複数のrequestGrantProductの呼び出しを識別するために利用できます。空文字や、同じ文字列を複数回指定しても問題ありません。
+   */
+  requestGrantProduct(productId: string, meta: string): void;
   }
 }
 
@@ -4587,7 +4714,7 @@ interface PlayerScript {
    *
    * #### 流量制御:
    *
-   * このAPIを含む、他のアイテム・プレイヤーの状態を変更するAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
+   * このAPIを含む、流量制御の対象となるAPIがスペース内で限度を超えて頻繁に呼び出され続けた場合、結果の反映が大きく遅延することがあります。
    * 詳しくは[流量制御](https://docs.cluster.mu/creatorkit/world/cluster-script/flow-control/)を参照してください。
    *
    * #### 流量制御による制限:
@@ -4774,6 +4901,26 @@ interface PlayerScript {
    * @param rotation レイヤーの方向
    */
   setRotation(rotation: Quaternion): void;
+  
+  /**
+   * 指定したプレイヤーの現在の位置をグローバル座標で取得します。
+   *
+   * 値の取得に失敗した場合、nullを返します。
+   *
+   * @param playerId 取得するプレイヤーのPlayerId
+   * @returns プレイヤーの現在の位置
+   */
+  getPositionOf(playerId: PlayerId) : Vector3 | null;
+
+  /**
+   * 指定したプレイヤーの現在の方向をグローバル座標で取得します。
+   *
+   * 値の取得に失敗した場合、nullを返します。
+   *
+   * @param playerId 取得するプレイヤーのPlayerId
+   * @returns プレイヤーの現在の方向
+   */
+  getRotationOf(playerId: PlayerId) : Quaternion | null;
 
   /**
    * プレイヤーのヒューマノイドボーンの位置を取得します。
@@ -5142,6 +5289,17 @@ interface PlayerScript {
    * @returns プレイヤーが現在使用しているアクセサリーの商品IDの配列。
    */
   getAccessoryProductIds(): string[];
+  
+  /**
+   * 指定したプレイヤーのボイスが、このPlayerScriptを実行するプレイヤーに対して聞こえる音量を変更します。
+   * 自分自身への設定は無視されます。
+   *
+   * この設定はPlayer Scriptの有効期間が終了した場合にリセットされます。
+   *
+   * @param playerId 設定するプレイヤーのPlayerId。
+   * @param rate 設定する音量の割合。0以上、1以下の値が指定できます。範囲外の値を指定した場合、範囲内の値に丸められます。
+   */
+  setVoiceVolumeRateOf(playerId: PlayerId, rate: number): void;
 }
 
 /**
@@ -5971,8 +6129,8 @@ interface GiftInfo {
 
   /**
    * ギフトの種類が識別できる文字列を取得します。形状が同じでも、色が異なるギフトでは異なる値を返します。
-   *
-   * `giftType` の名称と実際のギフトとの対応関係については [ギフトの取得](https://docs.cluster.mu/creatorkit/event/gift) を参照してください。
+   * 
+   * `giftType` の名称と実際のギフトとの対応関係については [ギフト一覧](https://docs.cluster.mu/creatorkit/appendix/gift-list) を参照してください。
    *
    */
   readonly giftType: string;
@@ -6156,3 +6314,47 @@ interface OscHandle {
    */
   isReceiveEnabled(): boolean;
 }
+
+/**
+ * @item
+ *
+ * {@link PlayerHandle.requestGrantProduct | PlayerHandle.requestGrantProduct} 及び {@link ClusterScript.onRequestGrantProductResult | ClusterScript.onRequestGrantProductResult} を使用して商品付与を実施した際の結果を示す、readonlyな型です。
+ */
+interface ProductGrantResult {
+  /**
+   * {@link PlayerHandle.requestGrantProduct | PlayerHandle.requestGrantProduct} で指定したmeta文字列です。
+   */
+  readonly meta: string;
+
+  /**
+   * 付与を実施した商品のIDです。
+   */
+  readonly productId: string;
+
+  /**
+   * 付与を実施した商品の商品名です。
+   */
+  readonly productName: string;
+
+  /**
+   * 付与されたプレイヤーの {@link PlayerHandle | PlayerHandle}です。
+   */
+  readonly player: PlayerHandle;
+
+  /**
+   * 商品付与の結果を示す文字列です。
+   * - `"Unknown"` .. ネットワークエラーなどの理由で、付与が行われたかどうかが判定できないことを示します
+   * - `"Granted"` .. プレイヤーに商品が付与されたことを示します
+   * - `"AlreadyOwned"` .. プレイヤーがすでに商品を所持していたことを示します
+   * - `"Failed"` ..  商品付与を実施しようとしたが、付与に失敗したことを示します
+   */
+  readonly status: ProductGrantStatus;
+
+  /**
+   * {@link ProductGrantResult.status | status} が `"Unknown"`、 `"Failed"` の場合に失敗理由を示す文字列です。{@link ProductGrantResult.status | status} がそれ以外の場合、 `null` を返します。
+   */
+  readonly errorReason: string;
+}
+
+/** @internal @item */
+type ProductGrantStatus = "Unknown" | "Granted" | "AlreadyOwned" | "Failed";
