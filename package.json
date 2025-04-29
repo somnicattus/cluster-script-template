@@ -1,5 +1,6 @@
 {
   "name": "cluster-script-template",
+  "version": "0.2.0",
   "type": "module",
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -9,5 +10,13 @@
   },
   "peerDependencies": {
     "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "lint": "bun biome lint",
+    "format": "bun biome format",
+    "check": "bun biome check",
+    "test": "bun test",
+    "build": "bun build.ts",
+    "fetch-types": "bun fetch-types.ts"
   }
 }
