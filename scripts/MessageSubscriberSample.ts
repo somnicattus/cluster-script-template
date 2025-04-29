@@ -4,16 +4,6 @@ import {
   subscribe,
 } from '../constants/messageType';
 
-// Declare the StateProxy type for the Script. Do not forget to initialize the state in the onStart callback.
-declare module '../types/cluster-script.d.ts' {
-  interface StateProxy {
-    /** Channel ID to subscribe message. */
-    channelId: number;
-    /** Visible or not */
-    isVisible: boolean;
-  }
-}
-
 $.onStart(() => {
   $.state.isVisible = true;
   const channelId = $.getStateCompat('this', 'channelId', 'integer');

@@ -1,12 +1,5 @@
 import { follow } from '../utils/follow';
 
-declare module '../types/cluster-script.d.ts' {
-  interface StateProxy {
-    /** Player to follow. */
-    owner?: PlayerHandle | undefined;
-  }
-}
-
 const offset = new Vector3(0, 2, 0);
 
 $.onInteract((player) => {

@@ -5,14 +5,6 @@ import {
   publish,
 } from '../constants/messageType';
 
-// Declare the StateProxy type for the Script. Do not forget to initialize the state in the onStart callback.
-declare module '../types/cluster-script.d.ts' {
-  interface StateProxy {
-    /** Subscriptions to channels. */
-    subscriptions: Partial<Record<number, (ItemHandle | PlayerHandle)[]>>;
-  }
-}
-
 const radius = 100;
 
 $.onStart(() => {

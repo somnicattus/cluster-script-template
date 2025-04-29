@@ -4,16 +4,6 @@ import {
   publish,
 } from '../constants/messageType';
 
-// Declare the StateProxy type for the Script. Do not forget to initialize the state in the onStart callback.
-declare module '../types/cluster-script.d.ts' {
-  interface StateProxy {
-    /** Global message bus. */
-    messageBus?: ItemHandle;
-    /** Channel ID to publish message. */
-    channelId: number;
-  }
-}
-
 $.onStart(() => {
   const channelId = $.getStateCompat('this', 'channelId', 'integer');
   if (channelId === undefined) {
