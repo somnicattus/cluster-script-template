@@ -19,4 +19,4 @@ if (!response.ok) {
   throw new Error(`unexpected response ${response.statusText}`);
 }
 
-await Bun.write('types/cluster-script.d.ts.txt', response);
+await Bun.write('types/cluster-script.d.ts', response);
