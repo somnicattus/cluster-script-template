@@ -112,4 +112,25 @@ $.onUpdate((deltaTimeSec) => {
 
 スクリプトの種類に合わせて、アイテム用の関数かプレイヤー用の関数を使用してください
 
+### `debounce.ts`
+
+関数の実行を遅延させるデバウンス機能を提供します。
+
+指定した遅延時間が経過するまで関数の実行を遅らせ、連続して呼び出された場合は最後の呼び出しから遅延時間が経過した後に一度だけ実行されます。
+
+これは `$.onUpdate` 内で頻繁に発生するイベントを制御したい場合に有用です。例えば、プレイヤーの移動やインタラクションによって頻繁にトリガーされる処理を一定間隔で実行したい場合などに使用できます。
+
+```ts
+import { debounce } from '../tools/debounce';
+
+const debouncedAction = debounce((deltaTime: number) => {
+   // 0.5秒間隔でのみ実行される処理
+   console.log('Action executed');
+}, 0.5);
+
+$.onUpdate((deltaTime) => {
+   // 毎フレーム呼び出されるが、実際の処理は0.5秒間隔で実行される
+   debouncedAction(deltaTime);
+});
+```
 

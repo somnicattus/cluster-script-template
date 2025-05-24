@@ -1,0 +1,1 @@
+var i=(e,n)=>{let t=0;return(a,...o)=>{if(t+=a,t>=n)e(a,...o),t=0}};var s=Math.PI*2,d=1,c=1;$.onUpdate(i((e)=>{if(!$.state.initialized)$.state.initialized=!0,$.state.origin=$.getPosition(),$.state.phase=0;$.state.phase=($.state.phase+e*c)%1,$.setPosition($.state.origin.add(new Vector3(0,Math.sin($.state.phase*s)*d,0)))},0.1));

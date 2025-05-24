@@ -1,1 +1,0 @@
-var n=(o,r)=>{let t=o.getPosition(),e=o.getRotation();if(t&&e)$.setPosition(t.add(r)),$.setRotation(e);else throw new Error("Player position or rotation cannot be obtained.")};var a=new Vector3(0,2,0);$.onInteract((o)=>{if($.state.owner?.id===o.id){$.state.owner=void 0;return}$.state.owner=o});$.onUpdate(()=>{if($.state.owner!==void 0)n($.state.owner,a)});

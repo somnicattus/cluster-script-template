@@ -8,17 +8,14 @@
  * @returns A debounced function that accumulates the `deltaTime` and invokes the original function
  *          when the accumulated time exceeds the specified delay.
  */
-export const debounce = <P extends readonly unknown[]>(
-  fn: (...args: P) => void,
-  delay: number,
-): ((deltaTime: number, ...args: P) => void) => {
+export const debounce = <P extends any[]>(fn: (deltaTime: number, ...args: P) => void, delay: number): ((deltaTime: number, ...args: P) => void) => {
   let accumulatedTime = 0;
 
-  return (deltaTime: number, ...args: P) => {
+  return (deltaTime, ...args) => {
     accumulatedTime += deltaTime;
 
     if (accumulatedTime >= delay) {
-      fn(...args);
+      fn(deltaTime, ...args);
       accumulatedTime = 0;
     }
   };

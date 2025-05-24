@@ -1,1 +1,0 @@
-var s="messageBusInitialized";var a="publish",i="signal";var o=(e,t)=>{let n=0;return(u,...d)=>{if(n+=u,n>=t)e(...d),n=0}};var c=2,r=o(()=>{$.state.messageBus?.send(a,{messageType:i,channelId:$.state.channelId})},c);$.onUpdate((e)=>{r(e)});$.onReceive((e,t)=>{if(e===s&&t instanceof ItemHandle)$.state.messageBus=t});

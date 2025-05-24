@@ -1,1 +1,0 @@
-var e=Math.PI*2;$.onStart(()=>{$.state.origin=$.getPosition(),$.state.phase=0});$.onUpdate((t)=>{$.state.phase=($.state.phase+t*1)%1,$.setPosition($.state.origin.add(new Vector3(0,Math.sin($.state.phase*e)*1,0)))});
